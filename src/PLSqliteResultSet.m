@@ -292,7 +292,7 @@ VALUE_ACCESSORS(OFDataArray *, data, columnType == SQLITE_NULL ? nil :
             return [self stringForColumnIndex: columnIndex];
 
         case SQLITE_INTEGER:
-            return [OFNumber initWithInt64: [self bigIntForColumnIndex: columnIndex]];
+            return [OFNumber numberWithInt64: [self bigIntForColumnIndex: columnIndex]];
 
         case SQLITE_FLOAT:
             return [OFNumber numberWithDouble: [self doubleForColumnIndex: columnIndex]];
