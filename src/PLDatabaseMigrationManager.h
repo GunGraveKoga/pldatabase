@@ -36,6 +36,8 @@
 #import "PLDatabaseMigrationVersionManager.h"
 #import "PLDatabaseMigrationDelegate.h"
 
+OF_ASSUME_NONNULL_BEGIN
+
 @protocol PLDatabaseMigrationDelegate;
 
 @interface PLDatabaseMigrationManager : OFObject {
@@ -57,13 +59,16 @@
                    versionManager: (id<PLDatabaseMigrationVersionManager>) versionManager
                          delegate: (id<PLDatabaseMigrationDelegate>) delegate;
 
-- (BOOL) migrateDatabase: (id<PLDatabase>) database error: (id *) outError;
+- (BOOL) migrateDatabase: (id<PLDatabase>) database error: (id _Nullable * _Nullable) outError;
 
 - (id) initWithConnectionProvider: (id<PLDatabaseConnectionProvider>) connectionProvider
                transactionManager: (id<PLDatabaseMigrationTransactionManager>) lockManager
                    versionManager: (id<PLDatabaseMigrationVersionManager>) versionManager
                          delegate: (id<PLDatabaseMigrationDelegate>) delegate __attribute__((deprecated("This method is deprecated!!! Replaced by PLDatabaseMigrationManager::initWithTransactionManager:versionManager:delegate:")));
 
-- (BOOL) migrateAndReturnError: (id *) outError __attribute__((deprecated("This method is deprecated!!! Replaced by PLDatabaseMigrationManager::migrateDatabase:error:")));
+- (BOOL) migrateAndReturnError: (id _Nullable * _Nullable) outError __attribute__((deprecated("This method is deprecated!!! Replaced by PLDatabaseMigrationManager::migrateDatabase:error:")));
 
 @end
+
+OF_ASSUME_NONNULL_END
+

@@ -34,15 +34,16 @@
 #import "PLSqliteResultSet.h"
 #import "PLSqliteUnlockNotify.h"
 
-#if !defined(UNIVERSAL_EXCEPTION)
-    #import "OFUniversalException.h"
-    #define UNIVERSAL_EXCEPTION OFUniversalException
-#endif
+#import "OFException+NSException.h"
 
 #include <assert.h>
 
 /* Keep trying for up to 10 minutes. We do not modify the busy timeout handler. */
 #define PL_SQLITE_BUSY_TIMEOUT 10 * 60 * 1000
+
+#ifndef PLLog
+#define PLLog(...) of_log(__VA_ARGS__)
+#endif
 
 
 /** A generic SQLite exception. */
@@ -179,7 +180,7 @@ OFString *PLSqliteException = @"PLSqliteException";
 
     /* Do not call open twice! */
     if (_sqlite != NULL)
-        @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"Attempted to open already-open SQLite database instance at '%@'. Called -[PLSqliteDatabase open] twice?", _path];
+        [OFException raise:PLSqliteException format:@"Attempted to open already-open SQLite database instance at '%@'. Called -[PLSqliteDatabase open] twice?", _path];
     
     /* Open the database. */    
     err = sqlite3_open_v2([_path UTF8String], &_sqlite, flags, NULL);
@@ -239,11 +240,11 @@ OFString *PLSqliteException = @"PLSqliteException";
     
     /* Leaking prepared statements is programmer error, and is the only cause for SQLITE_BUSY */
     if (err == SQLITE_BUSY)
-        @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"The SQLite database at '%@' can not be closed, as the implementation has leaked prepared statements", _path];
+        [OFException raise:PLSqliteException format:@"The SQLite database at '%@' can not be closed, as the implementation has leaked prepared statements", _path];
     
     /* Unexpected! This should not happen */
     if (err != SQLITE_OK)
-        of_log(@"Unexpected error closing SQLite database at '%@': %s", _path, sqlite3_errmsg(_sqlite));
+        PLLog(@"Unexpected error closing SQLite database at '%@': %s", _path, sqlite3_errmsg(_sqlite));
     
     /* Reset the variable. If any of the above failed, it is programmer error. */
     _sqlite = NULL;
@@ -341,7 +342,7 @@ OFString *PLSqliteException = @"PLSqliteException";
     /* Create the statement */
     stmt = [self prepareStatement: statement error: error closeAtCheckin: YES];
     if (stmt == nil)
-        of_log(@"Cannot create statement!");
+        PLLog(@"Cannot create statement!");
     else {
         /* Bind the arguments */
         [stmt bindParameters: [self arrayWithVaList: args count: [stmt parameterCount]]];
@@ -380,7 +381,7 @@ OFString *PLSqliteException = @"PLSqliteException";
 #pragma mark Transactions
 
 /* from PLDatabase. */
-- (BOOL) performTransactionWithRetryBlock: (PLDatabaseTransactionResult (^)()) block {
+- (BOOL) performTransactionWithRetryBlock: (PLDatabaseTransactionResult (^)(void)) block {
     return [self performTransactionWithRetryBlock: block error: NULL];
 }
 
@@ -556,7 +557,7 @@ OFString *PLSqliteException = @"PLSqliteException";
 
     /* If there are any results, the table exists */
     rs = [self executeQuery: @"SELECT name FROM SQLITE_MASTER WHERE name = ? and type = ?", tableName, @"table"];
-    exists = [rs next];
+    exists = [rs nextAndReturnError:NULL];
     [rs close];
 
     return exists;
@@ -634,7 +635,7 @@ OFString *PLSqliteException = @"PLSqliteException";
  *
  * @param error Pointer to NSError instance to populate. If nil, the error message will be logged instead.
  * @param errorCode A PLDatabaseError error code.
- * @param description A localized description of the error message.
+ * @param localizedDescription A localized description of the error message.
  * @param queryString The optional SQL query which caused the error.
  */
 - (void) populateError: (id *) error withErrorCode: (PLDatabaseError) errorCode
@@ -655,7 +656,7 @@ OFString *PLSqliteException = @"PLSqliteException";
         queryString = @"<none>";
     
     /* Log it and optionally return it */
-    of_log(@"A SQLite database error occurred on database '%@': %@ (SQLite #%@: %@) (query: '%@')", 
+    PLLog(@"A SQLite database error occurred on database '%@': %@ (SQLite #%@: %@) (query: '%@')",
           _path, result, vendorError, vendorString, queryString);
     
     if (error != NULL)

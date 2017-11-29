@@ -29,12 +29,8 @@
 #import <ObjFW/ObjFW.h>
 #import "PLSqliteResultSet.h"
 #import "PLSqliteUnlockNotify.h"
-#import "OFDataArray+WITHBYTES.h"
 
-#if !defined(UNIVERSAL_EXCEPTION)
-    #import "OFUniversalException.h"
-    #define UNIVERSAL_EXCEPTION OFUniversalException
-#endif
+#import "OFException+NSException.h"
 
 /**
  * @internal
@@ -110,7 +106,7 @@
  */
 - (void) assertNotClosed {
     if (_sqlite_stmt == NULL)
-        @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"Attempt to access already-closed result set."];
+        [OFException raise:PLSqliteException format:@"Attempt to access already-closed result set."];
 }
 
 /* From PLResultSet */
@@ -213,10 +209,10 @@
     }
     
     /* Not found */
-    @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format: @"Attempted to access unknown result column %@", name];
+    [OFException raise:PLSqliteException format: @"Attempted to access unknown result column %@", name];
 
     /* Unreachable */
-    abort();
+    OF_UNREACHABLE;
 }
 
 
@@ -231,7 +227,7 @@
     
     /* Verify that the index is in range */
     if (columnIndex > _columnCount - 1 || columnIndex < 0)
-        @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"Attempted to access out-of-range column index %d", columnIndex];
+        [OFException raise:PLSqliteException format:@"Attempted to access out-of-range column index %d", columnIndex];
     /* Fetch the type */
     columnType = sqlite3_column_type(_sqlite_stmt, columnIndex);
 
@@ -277,9 +273,9 @@ VALUE_ACCESSORS(float, float, sqlite3_column_double(_sqlite_stmt, columnIndex))
 VALUE_ACCESSORS(double, double, sqlite3_column_double(_sqlite_stmt, columnIndex))
 
 /* data */
-VALUE_ACCESSORS(OFDataArray *, data, columnType == SQLITE_NULL ? nil : 
-                    [OFDataArray dataWithBytes: sqlite3_column_blob(_sqlite_stmt, columnIndex)
-                                   length: sqlite3_column_bytes(_sqlite_stmt, columnIndex)])
+VALUE_ACCESSORS(OFData *, data, columnType == SQLITE_NULL ? nil : 
+                    [OFData dataWithItems: sqlite3_column_blob(_sqlite_stmt, columnIndex)
+                                   count: sqlite3_column_bytes(_sqlite_stmt, columnIndex)])
 
 
 /* From PLResultSet */
@@ -304,11 +300,11 @@ VALUE_ACCESSORS(OFDataArray *, data, columnType == SQLITE_NULL ? nil :
             return nil;
 
         default:
-            @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLDatabaseException format:@"Unhandled SQLite column type %d", columnType];
+            [OFException raise:PLDatabaseException format:@"Unhandled SQLite column type %d", columnType];
     }
 
     /* Unreachable */
-    abort();
+    OF_UNREACHABLE;
 }
 
 

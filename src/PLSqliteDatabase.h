@@ -62,7 +62,7 @@ extern OFString *PLSqliteException;
 
 + (instancetype) databaseWithPath: (OFString *) dbPath;
 
-- (instancetype) initWithPath: (OFString*) dbPath;
+- (instancetype) initWithPath: (OFString*) dbPath OF_DESIGNATED_INITIALIZER;
 
 - (BOOL) open;
 - (BOOL) openAndReturnError: (id *) error;

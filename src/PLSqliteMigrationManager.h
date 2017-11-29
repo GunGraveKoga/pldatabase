@@ -31,10 +31,27 @@
 
 #import "PLDatabaseMigrationManager.h"
 
+/**
+ * Implements database schema versioning using SQLite's per-database user_version field
+ * (see http://www.sqlite.org/pragma.html#version).
+ *
+ * Additionally implements the requisite SQLite locking.
+ *
+ * @warning This class depends on, and modifies, the SQLite per-database user_version
+ * field. Users of this class must not modify or rely upon the value of the user_version. This class
+ * will not correctly function if the user_version is externally modified.
+ *
+ * @par Thread Safety
+ * PLSqliteMigrationVersionManager instances implement no locking and must not be shared between threads.
+ */
 @interface PLSqliteMigrationManager : OFObject <PLDatabaseMigrationVersionManager, PLDatabaseMigrationTransactionManager>
 
 @end
 
 /* Provide a compatibility alias for the legacy class name. */
-__attribute__((deprecated("PLSqliteMigrationVersionManager is deprecated!!! Use PLSqliteMigrationManager insted"))) @interface PLSqliteMigrationVersionManager : PLSqliteMigrationManager
+/**
+ * @deprecated Replaced by PLSqliteMigrationManager.
+ */
+__attribute__((deprecated("PLSqliteMigrationVersionManager is deprecated!!! Use PLSqliteMigrationManager insted")))
+@interface PLSqliteMigrationVersionManager : PLSqliteMigrationManager
 @end

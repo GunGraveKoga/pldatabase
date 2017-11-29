@@ -30,41 +30,50 @@
 #import "PlausibleDatabase.h"
 #import "PLDatabaseConstants.h"
 
-#if !defined(ERROR_HANDLER_CLASS)
-    #import "OFError.h"
-    #define ERROR_HANDLER_CLASS OFError
-    #define ERROR_DESCRIPTION_KEY OFErrorDescription
-    #define VENDOR_ERROR_CODE_KEY OFVendorErrorCode
-    #define VENDOR_ERROR_DESCRIPTION_KEY OFVendorErrorString
-#endif
+#import "OFError.h"
 
 /** 
  * Generic Database Exception
  * @ingroup exceptions
  */
-OFString *PLDatabaseException = @"PLDatabaseException";
+OFString * const PLDatabaseException = @"PLDatabaseException";
 
 /** Plausible Database NSError Domain
  * @ingroup globals */
-OFString *PLDatabaseErrorDomain = @"PLDatabaseErrorDomain";
+OFString * const PLDatabaseErrorDomain = @"PLDatabaseErrorDomain";
 
 /**
  * Key to retrieve the optionally provided SQL query which caused the error from an NSError in the PLDatabaseErrorDomain, as an OFString
  * @ingroup globals
  */
-OFString *PLDatabaseErrorQueryStringKey = @"PLDatabaseErrorQueryStringKey";
+OFString * const PLDatabaseErrorQueryStringKey = @"PLDatabaseErrorQueryStringKey";
 
 /**
   * Key to retrieve the native database error code from an NSError in the PLDatabaseErrorDomain, as an NSNumber
   * @ingroup globals
   */
-OFString *PLDatabaseErrorVendorErrorKey = @"PLDatabaseErrorVendorErrorKey";
+OFString * const PLDatabaseErrorVendorErrorKey = @"PLDatabaseErrorVendorErrorKey";
 
 /** 
  * Key to retrieve the native database error string from an NSError in the PLDatabaseErrorDomain, as an OFString
  * @ingroup globals
  */
-OFString *PLDatabaseErrorVendorStringKey = @"PLDatabaseErrorVendorStringKey";
+OFString * const PLDatabaseErrorVendorStringKey = @"PLDatabaseErrorVendorStringKey";
+
+OFString * const OFVendorErrorCodeKey = @"OFVendorErrorCodeKey";
+OFString * const OFVendorErrorStringKey = @"OFVendorErrorStringKey";
+
+@implementation OFError (PLDataBaseError)
+
+- (OFString *)vendorErrorString {
+    return _userInfo[OFVendorErrorStringKey];
+}
+
+- (int)vendorErrorCode {
+    return ((OFNumber *)_userInfo[OFVendorErrorCodeKey]).intValue;
+}
+
+@end
 
 /**
  * @internal
@@ -80,8 +89,8 @@ OFString *PLDatabaseErrorVendorStringKey = @"PLDatabaseErrorVendorStringKey";
  * @param errorCode The error code.
  * @param localizedDescription A localized error description.
  * @param queryString The optional query which caused the error.
- * @param nativeCode The native SQL driver's error code.
- * @param nativeString The native SQL driver's non-localized error string.
+ * @param vendorError The native SQL driver's error code.
+ * @param vendorErrorString The native SQL driver's non-localized error string.
  * @return A NSError that may be returned to the API caller.
  */
 + (id) errorWithCode: (PLDatabaseError) errorCode localizedDescription: (OFString *) localizedDescription 
@@ -92,11 +101,11 @@ OFString *PLDatabaseErrorVendorStringKey = @"PLDatabaseErrorVendorStringKey";
 
     /* Create the userInfo dictionary */
     userInfo = [OFMutableDictionary dictionaryWithKeysAndObjects: 
-                ERROR_DESCRIPTION_KEY, localizedDescription,
+                OFLocalizedDescriptionKey, localizedDescription,
                 PLDatabaseErrorVendorErrorKey, vendorError,
                 PLDatabaseErrorVendorStringKey, vendorErrorString,
-                VENDOR_ERROR_CODE_KEY, vendorError,
-                VENDOR_ERROR_DESCRIPTION_KEY, vendorErrorString,
+                OFVendorErrorCodeKey, vendorError,
+                OFVendorErrorStringKey, vendorErrorString,
                 nil];
     
     /* Optionally insert the query string. */
@@ -105,7 +114,7 @@ OFString *PLDatabaseErrorVendorStringKey = @"PLDatabaseErrorVendorStringKey";
     
     /* Return the NSError */
     //return [NSError errorWithDomain: PLDatabaseErrorDomain code: errorCode userInfo: userInfo];
-    return [ERROR_HANDLER_CLASS errorWithSource:PLDatabaseErrorDomain code:errorCode userInfo:userInfo];
+    return [OFError errorWithDomain:PLDatabaseErrorDomain code:errorCode userInfo:userInfo];
 }
 
 @end

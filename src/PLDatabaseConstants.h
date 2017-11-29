@@ -29,14 +29,28 @@
 
 #import <ObjFW/OFObject.h>
 
+#import "OFError.h"
+
+OF_ASSUME_NONNULL_BEGIN
+
 /* Exceptions */
-extern OFString *PLDatabaseException;
+extern OFString * const PLDatabaseException;
 
 /* Error Domain and Codes */
-extern OFString *PLDatabaseErrorDomain;
-extern OFString *PLDatabaseErrorQueryStringKey;
-extern OFString *PLDatabaseErrorVendorErrorKey;
-extern OFString *PLDatabaseErrorVendorStringKey;
+extern OFString * const PLDatabaseErrorDomain;
+extern OFString * const PLDatabaseErrorQueryStringKey;
+extern OFString * const PLDatabaseErrorVendorErrorKey;
+extern OFString * const PLDatabaseErrorVendorStringKey;
+
+extern OFString * const OFVendorErrorCodeKey;
+extern OFString * const OFVendorErrorStringKey;
+
+@interface OFError (PLDataBaseError)
+
+@property (nonatomic, nullable, readonly, copy) OFString *vendorErrorString;
+@property (nonatomic, readonly) int vendorErrorCode;
+
+@end
 
 /**
  * NSError codes in the Plausible Database error domain.
@@ -69,3 +83,5 @@ typedef enum {
 @end
 
 #endif /* PL_DB_PRIVATE */
+
+OF_ASSUME_NONNULL_END

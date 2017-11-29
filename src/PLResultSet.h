@@ -33,7 +33,7 @@
 
 @class OFString;
 @class OFDate;
-@class OFDataArray;
+@class OFData;
 
 /**
  * Result values returned when iterating PLResetSet rows.
@@ -100,7 +100,7 @@ typedef enum {
  * @deprecated This method fails to differentiate between end of rows and an error condition. Replaced by 
  * PLResultSet::nextAndReturnError:.
  */
-- (BOOL) next;
+- (BOOL) next __attribute__((deprecated("This method fails to differentiate between end of rows and an error condition. Replaced by PLResultSet::nextAndReturnError:")));
 
 /**
  * Move the result cursor to the next available row. If no further rows
@@ -287,7 +287,7 @@ typedef enum {
  *
  * Will throw NSException if the column name is unknown.
  */
-- (OFDataArray *) dataForColumn: (OFString *) columnName;
+- (OFData *) dataForColumn: (OFString *) columnName;
 
 /**
  * Returns the NSData value of the given column index from the  current result row.
@@ -296,7 +296,7 @@ typedef enum {
  *
  * Will throw NSException if the column index is out of range.
  */
-- (OFDataArray *) dataForColumnIndex: (int) columnIndex;
+- (OFData *) dataForColumnIndex: (int) columnIndex;
 
 /**
  * Return the value of the named column as a Foundation Objective-C object, using the database driver's built-in
@@ -340,7 +340,7 @@ typedef enum {
  *
  * @note This method provides support for Objective-C's subscript syntax, and is otherwise identical to PLResultSet::objectForColumn:.
  */
-- (id) objectForKeyedSubscript: (id)key;
+- (id) objectForKeyedSubscript: (id)columnName;
 
 /**
  * Return the value of the named column as a Foundation Objective-C object, using the database driver's built-in
@@ -350,7 +350,7 @@ typedef enum {
  *
  * Will throw NSException if the column index is out of range.
  *
- * @param columnIndex Index of column value to return.
+ * @param index Index of column value to return.
  *
  * @note This method provides support for Objective-C's subscript syntax, and is otherwise identical to PLResultSet::objectForColumnIndex:.
  */

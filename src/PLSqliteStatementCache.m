@@ -28,6 +28,11 @@
  */
 #import <ObjFW/ObjFW.h>
 #import "PLSqliteStatementCache.h"
+#import "OFValue.h"
+
+#ifndef PLLog
+#define PLLog(...) of_log(__VA_ARGS__)
+#endif
 
 
 @interface PLSqliteStatementCache (PrivateMethods)
@@ -95,12 +100,11 @@
  * via checkoutStatementForQueryString: must be registered apriori.
  *
  * @param stmt The statement to register.
- * @param query The query string corresponding to this statement.
  *
  */
 - (void) registerStatement: (sqlite3_stmt *) stmt {
     of_spinlock_lock(&_lock); {
-        [_allStatements addObject:[OFNumber numberWithUIntPtr:(uintptr_t)stmt]];
+        [_allStatements addObject:[OFValue valueWithPointer:stmt]];
     }; of_spinlock_unlock(&_lock);
 }
 
@@ -115,10 +119,11 @@
  */
 - (void) checkinStatement: (sqlite3_stmt *) stmt forQuery: (OFString *) query {
     of_spinlock_lock(&_lock); {
+        OFValue *stmtVal = [OFValue valueWithPointer:stmt];
         /* If the statement pointer is not currently registered, there's nothing to do here. This should never occur. */
-        if (![_allStatements containsObject: [OFNumber numberWithUIntPtr:(uintptr_t)stmt]]) {
+        if (![_allStatements containsObject: stmtVal]) {
             // TODO - Should this be an assert()?
-            of_log(@"[PLSqliteStatementCache]: Received an unknown statement %p during check-in.", stmt);
+            PLLog(@"[PLSqliteStatementCache]: Received an unknown statement %p during check-in.", stmt);
             of_spinlock_unlock(&_lock);
             return;
         }
@@ -138,7 +143,7 @@
 
         /* Claim ownership of the statement */
         sqlite3_reset(stmt);
-        [stmtArray addObject:[OFNumber numberWithUIntPtr:(uintptr_t)stmt]];
+        [stmtArray addObject:stmtVal];
     }; of_spinlock_unlock(&_lock);
 }
 
@@ -162,7 +167,7 @@
         }
 
         /* Pop the statement from the array */
-        stmt = (sqlite3_stmt *) [[stmtArray objectAtIndex:0] uIntPtrValue];
+        stmt = (sqlite3_stmt *) [[stmtArray objectAtIndex:0] pointerValue];
         [stmtArray removeObjectAtIndex:0];
 
         /* Decrement the count */
@@ -190,8 +195,8 @@
 
         /* Finalize all registered statements */
         if (_allStatements != nil) {
-            for (OFNumber* stmt in [_allStatements allObjects]) {
-                sqlite3_finalize((sqlite3_stmt *)[stmt uIntPtrValue]);
+            for (OFValue* stmt in [_allStatements allObjects]) {
+                sqlite3_finalize((sqlite3_stmt *)[stmt pointerValue]);
                 [_allStatements removeObject:stmt];
             }
         }
@@ -218,8 +223,8 @@
     /* Iterate over all cached queries and finalize their sqlite statements */
     [_availableStatements enumerateKeysAndObjectsUsingBlock: ^(id key, id obj, bool *stop) {
         OFMutableArray* array = obj;
-        for (OFNumber* stmt in array) {
-            sqlite3_finalize((sqlite3_stmt *)[stmt uIntPtrValue]);
+        for (OFValue* stmt in array) {
+            sqlite3_finalize((sqlite3_stmt *)[stmt pointerValue]);
             [_allStatements removeObject:stmt];
         }
     }];

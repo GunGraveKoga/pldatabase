@@ -29,10 +29,7 @@
 #import <ObjFW/ObjFW.h>
 #import "PLSqlitePreparedStatement.h"
 
-#if !defined(UNIVERSAL_EXCEPTION)
-    #import "OFUniversalException.h"
-    #define UNIVERSAL_EXCEPTION OFUniversalException
-#endif
+#import "OFException+NSException.h"
 
 #include <assert.h>
 
@@ -85,7 +82,7 @@
 }
 
 - (int) count {
-    return [_values count];
+    return (int)[_values count];
 }
 
 // from PLSqliteParameterStrategy protocol
@@ -124,7 +121,7 @@
 }
 
 - (int) count {
-    return [_values count];
+    return (int)[_values count];
 }
 
 // from PLSqliteParameterStrategy protocol
@@ -180,7 +177,7 @@
  *
  * @param db A reference to the managing PLSqliteDatabase instance.
  * @param statementCache The statement cache into which the backing sqlite3_stmt should be checked back in.
- * @param sqliteStmt The prepared sqlite statement. This class will assume ownership of the reference.
+ * @param sqlite_stmt The prepared sqlite statement. This class will assume ownership of the reference.
  * @param queryString The original SQL query string, used for error reporting.
  * @param closeAtCheckin A flag specifying whether the statement should be closed at first checkin. Used to support returning
  * only the result set to a caller. When the result set is closed, the prepared statement is closed.
@@ -256,8 +253,8 @@
  * @param errorCode A PLDatabaseError error code.
  * @param description A localized description of the error message.
  */
-- (void) populateError: (id *) error withErrorCode: (PLDatabaseError) errorCode description: (OFString *) localizedDescription {
-    [_database populateError: error withErrorCode: errorCode description: localizedDescription queryString: _queryString];
+- (void) populateError: (id *) error withErrorCode: (PLDatabaseError) errorCode description: (OFString *) description {
+    [_database populateError: error withErrorCode: errorCode description: description queryString: _queryString];
 }
 
 /* from PLPreparedStatement */
@@ -286,7 +283,7 @@
         /* (Note that NSArray indexes from 0, so we subtract one to get the current value) */
         id value = [strategy valueForParameter: valueIndex withStatement: _sqlite_stmt];
         if (value == nil) {
-            @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"Missing parameter %d binding for query %@", valueIndex, _queryString];
+            [OFException raise:PLSqliteException format:@"Missing parameter %d binding for query %@", valueIndex, _queryString];
         }
 
         /* Bind the parameter */
@@ -333,7 +330,7 @@
     BOOL ret;
 
     /* Execute the query */
-    rs = [self executeQueryAndReturnError: outError];
+    rs = (PLSqliteResultSet *)[self executeQueryAndReturnError: outError];
     if (rs == nil)
         return NO;
 
@@ -403,7 +400,7 @@
  */
 - (void) assertNotClosed {
     if (_sqlite_stmt == NULL)
-        @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"Attempt to access already-closed prepared statement."];
+        [OFException raise:PLSqliteException format:@"Attempt to access already-closed prepared statement."];
 }
 
 /**
@@ -413,9 +410,9 @@
  */
 - (void) assertNotInUse {
     [self assertNotClosed];
-
+    
     if (_inUse)
-        @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"A PLSqliteResultSet is already active and has not been properly closed for prepared statement '%@'", _queryString];
+        [OFException raise:PLSqliteException format:@"A PLSqliteResultSet is already active and has not been properly closed for prepared statement '%@'", _queryString];
 }
 
 /**
@@ -453,8 +450,9 @@
     }
     
     /* Data */
-    else if ([value isKindOfClass: [OFDataArray class]]) {
-        return sqlite3_bind_blob(_sqlite_stmt, parameterIndex, [value items], [value count] * [value itemSize], SQLITE_TRANSIENT);
+    else if ([value isKindOfClass: [OFData class]]) {
+        OFData *data = (OFData *)value;
+        return sqlite3_bind_blob(_sqlite_stmt, parameterIndex, data.items, (int)(data.count * data.itemSize), SQLITE_TRANSIENT);
     }
     
     /* Date */
@@ -480,7 +478,7 @@
         
         /* If the value can fit into a 32-bit value, use that bind type. */
         else if (number <= INT32_MAX && number >= INT32_MIN) {
-            return sqlite3_bind_int(_sqlite_stmt, parameterIndex, number);
+            return sqlite3_bind_int(_sqlite_stmt, parameterIndex, (int)number);
             
             /* Otherwise use the 64-bit bind. */
         } else {
@@ -489,10 +487,10 @@
     }
     
     /* Not a known type */
-    @throw [UNIVERSAL_EXCEPTION exceptionWithName:PLSqliteException format:@"SQLite error binding unknown parameter type '%@'. Value: '%@'", [value class], value];
+    [OFException raise:PLSqliteException format:@"SQLite error binding unknown parameter type '%@'. Value: '%@'", [value class], value];
     
     /* Unreachable */
-    abort();
+    OF_UNREACHABLE;
 }
 
 @end

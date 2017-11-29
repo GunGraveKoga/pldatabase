@@ -30,24 +30,10 @@
 #import "PLSqliteMigrationManager.h"
 #include <assert.h>
 
-/**
- * @deprecated Replaced by PLSqliteMigrationManager.
- */
-@implementation PLSqliteMigrationVersionManager @end
 
-/**
- * Implements database schema versioning using SQLite's per-database user_version field
- * (see http://www.sqlite.org/pragma.html#version).
- *
- * Additionally implements the requisite SQLite locking.
- *
- * @warning This class depends on, and modifies, the SQLite per-database user_version
- * field. Users of this class must not modify or rely upon the value of the user_version. This class
- * will not correctly function if the user_version is externally modified.
- *
- * @par Thread Safety
- * PLSqliteMigrationVersionManager instances implement no locking and must not be shared between threads.
- */
+@implementation PLSqliteMigrationVersionManager
+@end
+
 @implementation PLSqliteMigrationManager
 
 // from PLDatabaseMigrationVersionManager protocol
@@ -80,7 +66,7 @@
         return NO;
     
     /* Get the version */
-    BOOL hasNext = [rs next];
+    BOOL hasNext = [rs nextAndReturnError:NULL];
     assert(hasNext == YES); // Should not happen
     *version = [rs intForColumn: @"user_version"];
     [rs close];
